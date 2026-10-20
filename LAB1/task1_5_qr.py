@@ -11,16 +11,27 @@ from common.io import print_arr, read_matrix_eps
 
 def qr_decompose(a):
     n = a.shape[0]
-    q = np.zeros((n, n))
-    r = np.zeros((n, n))
-    v = a.copy().astype(float)
+    r = a.copy().astype(float)
+    q = np.eye(n)
 
-    for i in range(n):
-        r[i, i] = math.sqrt(v[:, i] @ v[:, i])
-        q[:, i] = v[:, i] / r[i, i]
-        for j in range(i + 1, n):
-            r[i, j] = q[:, i] @ v[:, j]
-            v[:, j] = v[:, j] - r[i, j] * q[:, i]
+    for k in range(n - 1):
+        x = r[k:, k].copy()
+        norm = math.sqrt(x @ x)
+        if norm == 0:
+            continue
+
+        sign = 1.0 if x[0] >= 0 else -1.0
+        e1 = np.zeros(len(x))
+        e1[0] = 1.0
+        v = x + sign * norm * e1
+
+        h_small = np.eye(len(x)) - 2 * np.outer(v, v) / (v @ v)
+        h = np.eye(n)
+        h[k:, k:] = h_small
+
+        r = h @ r
+        q = q @ h
+
     return q, r
 
 
