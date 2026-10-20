@@ -35,46 +35,51 @@ def qr_decompose(a):
     return q, r
 
 
-def eigenvalues_from_schur(a, tol=1e-8):
+def block_eigenvalues(a, eps):
     n = a.shape[0]
     eigs = []
     i = 0
     while i < n:
-        if i == n - 1 or abs(a[i + 1, i]) < tol:
+        if i == n - 1 or abs(a[i + 1, i]) < eps:
             eigs.append(complex(a[i, i]))
             i += 1
-        else:
+        elif i + 1 == n - 1 or abs(a[i + 2, i + 1]) < eps:
             tr = a[i, i] + a[i + 1, i + 1]
             det = a[i, i] * a[i + 1, i + 1] - a[i, i + 1] * a[i + 1, i]
             d = cmath.sqrt(tr * tr - 4 * det)
             eigs.append((tr + d) / 2)
             eigs.append((tr - d) / 2)
             i += 2
+        else:
+            return None
     return eigs
 
 
+def eigenvalues_close(prev, curr, eps):
+    prev = sorted(prev, key=lambda z: (z.real, z.imag))
+    curr = sorted(curr, key=lambda z: (z.real, z.imag))
+    for old, new in zip(prev, curr):
+        if abs(new - old) > eps:
+            return False
+    return True
+
+
 def qr_algorithm(a0, eps, max_iter=10000):
+    #Остановка, когда СЗ блоков перестали меняться: |λ^k - λ^{k-1}| ≤ ε.
     a = a0.copy().astype(float)
-    n = a.shape[0]
+    prev = block_eigenvalues(a, eps)
 
     for it in range(1, max_iter + 1):
         q, r = qr_decompose(a)
         a = r @ q
+        eigs = block_eigenvalues(a, eps)
+        if eigs is not None and prev is not None and eigenvalues_close(prev, eigs, eps):
+            return a, eigs, it
+        if eigs is not None:
+            prev = eigs
 
-        ok = True
-        i = 0
-        while i < n - 1:
-            if abs(a[i + 1, i]) < eps:
-                i += 1
-            else:
-                if i + 2 < n and abs(a[i + 2, i + 1]) >= eps:
-                    ok = False
-                    break
-                i += 2
-        if ok:
-            return a, eigenvalues_from_schur(a, tol=eps), it
-
-    return a, eigenvalues_from_schur(a, tol=eps), max_iter
+    eigs = block_eigenvalues(a, eps)
+    return a, eigs if eigs is not None else [], max_iter
 
 
 def fmt(z):
