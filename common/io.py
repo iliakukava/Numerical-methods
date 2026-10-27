@@ -76,6 +76,34 @@ def read_tridiagonal(filename, cast=float):
     return lower, main, upper, rhs
 
 
+def read_xy_star(filename):
+    """
+    n
+    x0 ... x_{n-1}
+    y0 ... y_{n-1}
+    x*
+    """
+    data = read_numbers(filename)
+    n = int(data[0])
+    x = np.array(data[1 : 1 + n])
+    y = np.array(data[1 + n : 1 + 2 * n])
+    x_star = data[1 + 2 * n]
+    return x, y, x_star
+
+
+def read_xy(filename):
+    """
+    n
+    x0 ... x_{n-1}
+    y0 ... y_{n-1}
+    """
+    data = read_numbers(filename)
+    n = int(data[0])
+    x = np.array(data[1 : 1 + n])
+    y = np.array(data[1 + n : 1 + 2 * n])
+    return x, y
+
+
 def read_scalar_task(filename):
     """eps, x0_simple, x0_newton, plot_left, plot_right"""
     data = read_numbers(filename)
